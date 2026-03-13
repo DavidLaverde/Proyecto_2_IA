@@ -59,7 +59,50 @@ def backtracking_fc(csp: DroneAssignmentCSP) -> dict[str, str] | None:
     - Forward checking reduces the search space by detecting failures earlier than basic backtracking.
     """
     # TODO: Implement your code here
-    return None
+    def forwardCheck(var, assignment, domain):
+
+        removed = []
+        
+        for neighbor in csp.get_neighbors(var):
+            if neighbor not in assignment:
+                for val in domain[neighbor][:]:
+                    if not csp.is_consistent(neighbor, val, assignment):
+                        domain[neighbor].remove(val)
+                        removed.append((neighbor, val))
+
+                if len(domain[neighbor]) == 0:
+                    return False, removed
+
+        return True, removed 
+
+    def restore(domain, removed):
+        for var, val in removed:
+            domain[var].append(val)
+
+    def backtrack(assingment, domains):
+        
+        if csp.is_complete(assingment):
+            return assingment
+        
+        var = csp.get_unassigned_variables(assingment)[0]
+
+        for value in csp.domains[var]:
+            if csp.is_consistent(var, value, assingment):
+                csp.assign(var, value, assingment)
+                success, removed = forwardCheck(var, assingment, domains) 
+
+                if success:
+                    result = backtrack(assingment, domains)
+                    if result is not None:
+                        return result
+                    
+                restore(domains, removed)
+
+                csp.unassign(var, assingment)
+        return None
+    domains = {v: list(csp.domains[v]) for v in csp.domains}
+
+    return backtrack({}, domains)
 
 
 def backtracking_ac3(csp: DroneAssignmentCSP) -> dict[str, str] | None:
